@@ -1,377 +1,267 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>맛동여지도</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc; /* Tailwind slate-50 */
-        }
-        #map {
-            height: 400px;
-            width: 100%;
-            border-radius: 0.5rem; /* rounded-lg */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
-            margin-bottom: 2rem;
-        }
-        .category-header {
-            border-bottom: 2px solid #e2e8f0; /* Tailwind slate-200 */
-            padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
-            margin-top: 2rem;
-            color: #1e293b; /* Tailwind slate-800 */
-            font-weight: 600;
-            font-size: 1.25rem; /* text-xl */
-            display: flex;
-            align-items: center;
-        }
-        .category-header i {
-            margin-right: 0.5rem;
-            color: #3b82f6; /* Tailwind blue-500 */
-        }
-        .restaurant-item {
-            background-color: white;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow */
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-        }
-        .restaurant-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
-        }
-        .restaurant-name {
-            font-size: 1.125rem; /* text-lg */
-            font-weight: 600;
-            color: #0f172a; /* Tailwind slate-900 */
-            margin-bottom: 0.25rem;
-        }
-        .restaurant-info {
-            color: #64748b; /* Tailwind slate-500 */
-            font-size: 0.875rem; /* text-sm */
-            margin-bottom: 0.25rem;
-        }
-        .restaurant-rating {
-            color: #f59e0b; /* Tailwind amber-500 */
-            font-weight: 500;
-        }
-        .category-filter {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-            overflow-x: auto;
-            padding-bottom: 0.5rem;
-            scrollbar-width: none; /* Firefox */
-        }
-        .category-filter::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
-        }
-        .filter-btn {
-            background-color: white;
-            border: 1px solid #e2e8f0; /* slate-200 */
-            border-radius: 9999px; /* full rounded */
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem; /* text-sm */
-            font-weight: 500;
-            color: #475569; /* slate-600 */
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .filter-btn:hover {
-            background-color: #f1f5f9; /* slate-100 */
-            border-color: #cbd5e1; /* slate-300 */
-        }
-        .filter-btn.active {
-            background-color: #3b82f6; /* blue-500 */
-            color: white;
-            border-color: #3b82f6;
-        }
+<!-- ... existing code ... -->
         .filter-btn i {
             margin-right: 0.25rem;
         }
+        /* 모달 및 버튼 스타일 추가 */
+        #add-modal, #message-modal, #confirm-modal { display: none; }
+        #add-modal.flex, #message-modal.flex, #confirm-modal.flex { display: flex; }
+        .delete-btn { color: #ef4444; cursor: pointer; transition: color 0.2s; }
+        .delete-btn:hover { color: #b91c1c; }
     </style>
-    <!-- 카카오맵 API (YOUR_KAKAO_APP_KEY 부분에 발급받은 JavaScript 키를 넣으세요) --> 
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=cd39d399e94b88529933f6121c054306"></script>
+    <!-- 카카오맵 API (YOUR_KAKAO_APP_KEY 부분에 발급받은 JavaScript 키를 넣으세요. &libraries=services 필수) -->
+    <!-- http: 또는 https: 를 명시적으로 추가하여 오류 방지 -->
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=cd39d399e94b88529933f6121c054306&libraries=services"></script>
 </head>
 <body class="text-slate-800">
-
-    <header class="bg-white shadow-sm sticky top-0 z-10">
-        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-center">
-            <!-- Using the user-provided logo image name -->
-            <img src="맛동여지도 로고.png" alt="맛동여지도 로고" class="h-16" onerror="this.onerror=null; this.src='https://placehold.co/200x80/ffffff/1e293b?text=맛동여지도'; this.classList.add('rounded');">
-        </div>
-    </header>
-
-    <main class="max-w-4xl mx-auto px-4 py-8">
-        
+<!-- ... existing code ... -->
         <section>
             <div class="flex justify-between items-end mb-4">
                 <h2 class="text-2xl font-bold text-slate-800">제주도 맛집 지도</h2>
+                <button onclick="openAddModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow text-sm font-medium transition-colors">
+                    <i class="fas fa-plus mr-1"></i> 추가
+                </button>
             </div>
             
             <div class="category-filter" id="category-filter-container">
-                <!-- Filter buttons will be populated by JavaScript -->
-            </div>
-
-            <div id="map"></div>
-        </section>
-
-        <section id="restaurant-list">
-            <!-- Content will be populated by JavaScript -->
-        </section>
-
-    </main>
-
+<!-- ... existing code ... -->
     <footer class="bg-slate-800 text-white py-6 text-center mt-12">
         <p class="text-sm text-slate-400">&copy; 2026 맛동여지도. All rights reserved.</p>
     </footer>
 
+    <!-- 맛집 추가 모달 -->
+    <div id="add-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 items-center justify-center hidden">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+            <h3 class="text-xl font-bold mb-4 text-slate-800">새로운 맛집 추가</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">카테고리</label>
+                    <select id="new-category" class="w-full border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="western">양식</option>
+                        <option value="chinese">중식</option>
+                        <option value="korean">한식</option>
+                        <option value="cafe">카페</option>
+                        <option value="michelin">미슐랭</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">식당 이름</label>
+                    <input type="text" id="new-name" class="w-full border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="예: 맛동식당">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">정확한 주소 (도로명 또는 지번)</label>
+                    <input type="text" id="new-address" class="w-full border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="예: 제주시 중앙로 123">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">평점 (1.0 ~ 5.0)</label>
+                    <input type="number" step="0.1" id="new-rating" class="w-full border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="예: 4.5">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeAddModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium transition-colors">취소</button>
+                <button onclick="submitNewRestaurant()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium transition-colors shadow-sm">추가하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 커스텀 알림(Message) 모달 -->
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] items-center justify-center hidden">
+        <div class="bg-white rounded-lg p-6 w-full max-w-sm mx-4 shadow-xl text-center">
+            <p id="message-text" class="text-slate-800 mb-6 font-medium break-keep"></p>
+            <button onclick="closeMessage()" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium transition-colors w-full">확인</button>
+        </div>
+    </div>
+
+    <!-- 커스텀 확인(Confirm) 모달 -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] items-center justify-center hidden">
+        <div class="bg-white rounded-lg p-6 w-full max-w-sm mx-4 shadow-xl text-center">
+            <p id="confirm-text" class="text-slate-800 mb-6 font-medium break-keep"></p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeConfirm(false)" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium flex-1">취소</button>
+                <button onclick="closeConfirm(true)" class="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 font-medium flex-1">삭제</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Data populated from Google Maps search results
-        const restaurants = {
+        // 기본 데이터
+        const defaultRestaurants = {
             western: [
-                { name: "양식당", address: "제주시 성화로5길 5", rating: "4.8", status: "영업 중", lat: 33.4934, lng: 126.4952 }, // Approximated coords for Jeju
-                { name: "컬쳐드", address: "제주시 아라동 승천로 81", rating: "4.7", status: "영업 중", lat: 33.4750, lng: 126.5450 },
-                { name: "연동 키친글라", address: "제주시 연동12길 25-1", rating: "4.9", status: "영업 중", lat: 33.4850, lng: 126.4900 },
-                { name: "파페로", address: "제주시 원노형6길 14", rating: "4.7", status: "영업 종료", lat: 33.4800, lng: 126.4800 },
-                { name: "이누팬", address: "제주시 신설로 40-11 1 층", rating: "4.9", status: "영업 종료 (곧 영업 시작)", lat: 33.4900, lng: 126.5400 }
+                { name: "마초그릴", address: "제주특별자치도 제주시 연동 282-3", rating: 4.5, status: "영업 중", lat: 33.4890, lng: 126.4983 },
+                { name: "루스트플레이스", address: "제주특별자치도 제주시 노형동 379-1", rating: 4.2, status: "영업 중", lat: 33.4805, lng: 126.4819 }
             ],
             chinese: [
-                { name: "왕가 중화요리", address: "제주시 고마로19길 2", rating: "5.0", status: "영업 중", lat: 33.5050, lng: 126.5350 },
-                { name: "제주홍랑짬뽕", address: "제주시 동광로 9 1층", rating: "4.9", status: "영업 중", lat: 33.5100, lng: 126.5250 },
-                { name: "보배반점 제주도청점", address: "제주시 연동 310-13", rating: "4.7", status: "영업 중", lat: 33.4880, lng: 126.4980 },
-                { name: "소리원", address: "제주시 연동12길 37", rating: "4.2", status: "영업 중", lat: 33.4855, lng: 126.4910 },
-                { name: "영 중화요리", address: "제주시 서광로 205", rating: "4.6", status: "영업 중", lat: 33.4990, lng: 126.5150 }
+                { name: "홍성방", address: "제주특별자치도 서귀포시 대정읍 하모리 938-4", rating: 4.6, status: "영업 중", lat: 33.2173, lng: 126.2498 },
+                { name: "덕성원", address: "제주특별자치도 서귀포시 정방동 333-1", rating: 4.3, status: "영업 중", lat: 33.2458, lng: 126.5655 }
             ],
             korean: [
-                { name: "연미관", address: "제주시 신대로9길 21-1", rating: "4.9", status: "영업 중", lat: 33.4860, lng: 126.4950 },
-                { name: "서귀포모녀식당", address: "제주시 선덕로3길 20", rating: "4.6", status: "영업 중", lat: 33.4900, lng: 126.4950 },
-                { name: "장모식탁", address: "제주시 연신로 51", rating: "4.5", status: "영업 중", lat: 33.4800, lng: 126.5400 },
-                { name: "상춘재", address: "제주시 중앙로 598", rating: "4.4", status: "영업 중", lat: 33.4600, lng: 126.5400 }
+                { name: "우진해장국", address: "제주특별자치도 제주시 삼도이동 831", rating: 4.8, status: "영업 중", lat: 33.5115, lng: 126.5200 },
+                { name: "자매국수", address: "제주특별자치도 제주시 일도이동 1034-10", rating: 4.7, status: "영업 중", lat: 33.5134, lng: 126.5350 },
+                { name: "상춘재", address: "제주특별자치도 제주시 조천읍 선교로 211", rating: 4.9, status: "영업 중", lat: 33.4566, lng: 126.6926 }
             ],
             cafe: [
-                { name: "글러트니커피", address: "제주시 구남로2길 38", rating: "4.9", status: "영업 중", lat: 33.4950, lng: 126.5350 },
-                { name: "플랜트827", address: "제주시 월평4길 54-27", rating: "4.7", status: "영업 중", lat: 33.4700, lng: 126.5600 },
-                { name: "코리코카페 제주점", address: "제주시 구좌읍 비자림로 1199", rating: "4.9", status: "영업 중", lat: 33.4300, lng: 126.7500 },
-                { name: "커피템플", address: "제주시 영평길 269", rating: "4.5", status: "영업 중", lat: 33.4500, lng: 126.5800 },
-                { name: "고도500", address: "제주시", rating: "4.5", status: "영업 중", lat: 33.4500, lng: 126.5500 }
+                { name: "몽상드애월", address: "제주특별자치도 제주시 애월읍 애월로1길 24-9", rating: 4.4, status: "영업 중", lat: 33.4628, lng: 126.3110 },
+                { name: "테라로사", address: "제주특별자치도 서귀포시 칠십리로658번길 27-16", rating: 4.6, status: "영업 중", lat: 33.2429, lng: 126.6152 },
+                { name: "커피템플", address: "제주특별자치도 제주시 영평동 2171-1", rating: 4.8, status: "영업 중", lat: 33.4593, lng: 126.5663 }
+            ],
+            michelin: [
+                { name: "스시호시카이", address: "제주특별자치도 제주시 오남로 90", rating: 4.9, status: "영업 중", lat: 33.4800, lng: 126.5167 },
+                { name: "밀리우", address: "제주특별자치도 서귀포시 표선면 민속해안로 537", rating: 4.8, status: "영업 중", lat: 33.3228, lng: 126.8314 },
+                { name: "넘버피넛", address: "제주특별자치도 서귀포시 색달중앙로 38", rating: 4.7, status: "영업 중", lat: 33.2576, lng: 126.4124 },
+                { name: "해비치호텔 수무루", address: "제주특별자치도 서귀포시 표선면 민속해안로 537", rating: 4.7, status: "영업 중", lat: 33.3228, lng: 126.8314 }
             ]
-        };
+        }; // <-- 이 괄호(};)가 빠져서 생긴 오류입니다!
 
         const categories = [
             { id: 'western', title: '양식', icon: 'fa-utensils' },
             { id: 'chinese', title: '중식', icon: 'fa-bowl-rice' },
             { id: 'korean', title: '한식', icon: 'fa-bowl-food' },
-            { id: 'cafe', title: '카페', icon: 'fa-mug-hot' }
+            { id: 'cafe', title: '카페', icon: 'fa-mug-hot' },
+            { id: 'michelin', title: '미슐랭', icon: 'fa-award text-amber-500' }
         ];
 
+        // 로컬 스토리지 데이터 연동 (새로고침해도 맛집 유지)
+        let restaurants;
+        const savedData = localStorage.getItem('matdong_data');
+        if (savedData) {
+            restaurants = JSON.parse(savedData);
+        } else {
+            // 최초 접속 시 기본 데이터를 복사해서 가져옴
+            restaurants = JSON.parse(JSON.stringify(defaultRestaurants)); 
+        }
+
+        function saveData() {
+            localStorage.setItem('matdong_data', JSON.stringify(restaurants));
+        }
+
         let map;
-        let markers = [];
-        let infoWindow;
-        let currentFilter = 'all'; // Default to show all
-
-        // 페이지 로드 시 카카오맵 초기화
-        window.onload = function() {
-            initMap();
-        };
-
-        function initMap() {
-            renderFilters();
-
-            const mapContainer = document.getElementById('map');
-            
-            // 카카오맵 객체가 로드되었는지 확인
-            if (typeof kakao === 'undefined' || !kakao.maps) {
-                mapContainer.innerHTML = `
-                    <div class="flex items-center justify-center h-full bg-slate-100 text-slate-500 text-center p-4 rounded-lg">
-                        <p><i class="fas fa-map-marked-alt text-3xl mb-2"></i><br>지도를 불러올 수 없습니다.<br>카카오맵 API 키를 확인해주세요.</p>
-                    </div>
-                `;
-                updateView(); // 지도가 없어도 리스트는 렌더링
-                return;
-            }
-
-            const mapOption = { 
-                center: new kakao.maps.LatLng(33.4500, 126.5300), // 제주도 중심
-                level: 8 
-            };
-
-            map = new kakao.maps.Map(mapContainer, mapOption);
-            infoWindow = new kakao.maps.InfoWindow({ zIndex:1 });
-
-            updateView();
-        }
-
-        function renderFilters() {
-            const container = document.getElementById('category-filter-container');
-            container.innerHTML = '';
-
-            const allBtn = document.createElement('button');
-            allBtn.className = `filter-btn ${currentFilter === 'all' ? 'active' : ''}`;
-            allBtn.innerHTML = `<i class="fas fa-globe"></i> 전체`;
-            allBtn.onclick = () => setFilter('all');
-            container.appendChild(allBtn);
-
-            categories.forEach(cat => {
-                const btn = document.createElement('button');
-                btn.className = `filter-btn ${currentFilter === cat.id ? 'active' : ''}`;
-                btn.innerHTML = `<i class="fas ${cat.icon}"></i> ${cat.title}`;
-                btn.onclick = () => setFilter(cat.id);
-                container.appendChild(btn);
-            });
-        }
-
-        function setFilter(categoryId) {
-            currentFilter = categoryId;
-            renderFilters();
-            updateView();
-        }
-
-        function updateView() {
-            clearMarkers();
-            renderList();
-            addMarkers();
-        }
-
-        function clearMarkers() {
-            for (let i = 0; i < markers.length; i++) {
-                markers[i].setMap(null);
-            }
-            markers = [];
-        }
-
-        function addMarkers() {
-            if(!map) return;
-            
-            const categoriesToRender = currentFilter === 'all' ? categories : categories.filter(c => c.id === currentFilter);
-
-            categoriesToRender.forEach(category => {
-                const list = restaurants[category.id];
-
-                list.forEach(place => {
-                    if (place.lat && place.lng) {
-                        const markerPosition = new kakao.maps.LatLng(place.lat, place.lng);
-                        
-                        const marker = new kakao.maps.Marker({
-                            position: markerPosition,
-                            title: place.name
-                        });
-
-                        marker.setMap(map);
-
-                        // 카카오맵 마커 클릭 이벤트
-                        kakao.maps.event.addListener(marker, 'click', function() {
-                            const contentString = `
-                                <div style="padding:10px; min-width:150px;">
-                                    <h3 class="font-bold text-base mb-1">${place.name}</h3>
-                                    <p class="text-xs text-gray-600 mb-1">${place.address}</p>
-                                    <p class="text-xs font-semibold text-amber-500"><i class="fas fa-star"></i> ${place.rating}</p>
-                                </div>
-                            `;
-                            infoWindow.setContent(contentString);
-                            infoWindow.open(map, marker);
-                            map.panTo(markerPosition);
-                        });
-
-                        markers.push(marker);
-                    }
-                });
-            });
-        }
-
-        function renderList() {
-            const listContainer = document.getElementById('restaurant-list');
-            listContainer.innerHTML = '';
-
-            const categoriesToRender = currentFilter === 'all' ? categories : categories.filter(c => c.id === currentFilter);
-
-            if (categoriesToRender.length === 0) {
-                 listContainer.innerHTML = '<p class="text-center text-gray-500 my-8">해당 카테고리의 맛집이 없습니다.</p>';
-                 return;
-            }
-
-            categoriesToRender.forEach(category => {
-                const categoryData = restaurants[category.id];
-                
-                const header = document.createElement('h3');
-                header.className = 'category-header';
-                header.innerHTML = `<i class="fas ${category.icon}"></i> ${category.title} 맛집`;
-                listContainer.appendChild(header);
-
-                const grid = document.createElement('div');
-                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
-
-                categoryData.forEach(place => {
-                    const item = document.createElement('div');
-                    item.className = 'restaurant-item flex flex-col justify-between';
-                    
-                    let statusColor = place.status.includes('영업 중') ? 'text-emerald-600' : 'text-rose-500';
-
-                    item.innerHTML = `
+<!-- ... existing code ... -->
                         <div>
                             <div class="flex justify-between items-start mb-2">
                                 <h4 class="restaurant-name">${place.name}</h4>
-                                <span class="restaurant-rating"><i class="fas fa-star text-sm"></i> ${place.rating}</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="restaurant-rating"><i class="fas fa-star text-sm"></i> ${place.rating}</span>
+                                    <button onclick="deleteRestaurant('${category.id}', '${place.name}')" class="delete-btn text-lg" title="삭제하기">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
                             </div>
                             <p class="restaurant-info"><i class="fas fa-map-marker-alt w-4 text-center"></i> ${place.address}</p>
-                        </div>
-                        <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
-                            <span class="text-xs font-medium ${statusColor}">${place.status}</span>
-                            <button class="text-sm text-blue-500 hover:text-blue-700 font-medium transition-colors" onclick="focusOnMap(${place.lat}, ${place.lng}, '${place.name}')">
-                                지도에서 보기
-                            </button>
-                        </div>
-                    `;
-                    grid.appendChild(item);
-                });
-
-                listContainer.appendChild(grid);
-            });
-        }
-
+<!-- ... existing code ... -->
         function focusOnMap(lat, lng, name) {
             if(!map) {
-                alert("지도를 불러올 수 없습니다. API 키를 확인해주세요.");
+                showMessage("지도를 불러올 수 없습니다. API 키를 확인해주세요.");
                 return;
             }
             
             const moveLatLon = new kakao.maps.LatLng(lat, lng);
-            map.setLevel(4);
-            map.panTo(moveLatLon);
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            const targetMarker = markers.find(m => m.getTitle() === name);
-            if (targetMarker) {
-                 const place = findPlaceData(name);
-                 if(place){
-                     const contentString = `
-                        <div style="padding:10px; min-width:150px;">
-                            <h3 class="font-bold text-base mb-1">${place.name}</h3>
-                            <p class="text-xs text-gray-600 mb-1">${place.address}</p>
-                            <p class="text-xs font-semibold text-amber-500"><i class="fas fa-star"></i> ${place.rating}</p>
-                        </div>
-                    `;
-                    infoWindow.setContent(contentString);
-                    infoWindow.open(map, targetMarker);
-                 }
-            }
-        }
-
+<!-- ... existing code ... -->
         function findPlaceData(name) {
             for(const cat in restaurants) {
                 const found = restaurants[cat].find(p => p.name === name);
                 if(found) return found;
             }
             return null;
+        }
+
+        // --- 알림(Message) 및 확인(Confirm) 커스텀 UI 함수 ---
+        
+        function showMessage(msg) {
+            document.getElementById('message-text').innerText = msg;
+            document.getElementById('message-modal').classList.remove('hidden');
+            document.getElementById('message-modal').classList.add('flex');
+        }
+
+        function closeMessage() {
+            document.getElementById('message-modal').classList.add('hidden');
+            document.getElementById('message-modal').classList.remove('flex');
+        }
+
+        let confirmActionCallback = null;
+        
+        function showConfirm(msg, callback) {
+            document.getElementById('confirm-text').innerText = msg;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            document.getElementById('confirm-modal').classList.add('flex');
+            confirmActionCallback = callback;
+        }
+
+        function closeConfirm(isConfirmed) {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            document.getElementById('confirm-modal').classList.remove('flex');
+            if (isConfirmed && confirmActionCallback) {
+                confirmActionCallback();
+            }
+        }
+
+        // --- 맛집 추가 및 삭제 로직 ---
+        
+        function openAddModal() {
+            document.getElementById('add-modal').classList.remove('hidden');
+            document.getElementById('add-modal').classList.add('flex');
+        }
+
+        function closeAddModal() {
+            document.getElementById('add-modal').classList.add('hidden');
+            document.getElementById('add-modal').classList.remove('flex');
+            // 입력창 초기화
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-address').value = '';
+            document.getElementById('new-rating').value = '';
+        }
+
+        function submitNewRestaurant() {
+            const category = document.getElementById('new-category').value;
+            const name = document.getElementById('new-name').value;
+            const address = document.getElementById('new-address').value;
+            const rating = document.getElementById('new-rating').value;
+
+            if (!name || !address || !rating) {
+                showMessage("모든 정보를 입력해주세요.");
+                return;
+            }
+
+            if (!kakao || !kakao.maps || !kakao.maps.services) {
+                showMessage("주소 검색 기능을 불러올 수 없습니다. 코드의 카카오 API URL에 '&libraries=services'가 포함되어 있는지 확인해주세요.");
+                return;
+            }
+
+            // 카카오 주소-좌표 변환 객체 생성
+            const geocoder = new kakao.maps.services.Geocoder();
+
+            // 주소로 좌표를 검색합니다
+            geocoder.addressSearch(address, function(result, status) {
+                if (status === kakao.maps.services.Status.OK) {
+                    const newPlace = {
+                        name: name,
+                        address: address,
+                        rating: rating,
+                        status: "영업 중", 
+                        lat: parseFloat(result[0].y),
+                        lng: parseFloat(result[0].x)
+                    };
+
+                    // 데이터 추가 및 기기에 저장
+                    if (!restaurants[category]) {
+                        restaurants[category] = [];
+                    }
+                    restaurants[category].push(newPlace);
+                    saveData();
+
+                    showMessage(`'${name}' 맛집이 성공적으로 추가되었습니다!`);
+                    closeAddModal();
+                    updateView(); // 지도 마커 및 리스트 새로고침
+                } else {
+                    showMessage("주소를 찾을 수 없습니다. 정확한 주소(도로명 또는 지번)를 입력해주세요.");
+                }
+            });
+        }
+
+        function deleteRestaurant(categoryId, placeName) {
+            showConfirm(`'${placeName}'을(를) 맛집 목록에서 정말 삭제하시겠습니까?`, function() {
+                restaurants[categoryId] = restaurants[categoryId].filter(p => p.name !== placeName);
+                saveData(); // 변경된 데이터 저장
+                updateView(); // 화면 새로고침
+            });
         }
 
     </script>
