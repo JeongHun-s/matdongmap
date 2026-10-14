@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>맛동여지도</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Tailwind slate-50 */
+        }
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+            margin-bottom: 2rem;
+        }
+        .category-header {
+            border-bottom: 2px solid #e2e8f0; /* Tailwind slate-200 */
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            margin-top: 2rem;
+            color: #1e293b; /* Tailwind slate-800 */
+            font-weight: 600;
+            font-size: 1.25rem; /* text-xl */
+            display: flex;
+            align-items: center;
+        }
+        .category-header i {
+            margin-right: 0.5rem;
+            color: #3b82f6; /* Tailwind blue-500 */
+        }
+        .restaurant-item {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow */
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .restaurant-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+        }
+        .restaurant-name {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600;
+            color: #0f172a; /* Tailwind slate-900 */
+            margin-bottom: 0.25rem;
+        }
+        .restaurant-info {
+            color: #64748b; /* Tailwind slate-500 */
+            font-size: 0.875rem; /* text-sm */
+            margin-bottom: 0.25rem;
+        }
+        .restaurant-rating {
+            color: #f59e0b; /* Tailwind amber-500 */
+            font-weight: 500;
+        }
+        .category-filter {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            scrollbar-width: none; /* Firefox */
+        }
+        .category-filter::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+        .filter-btn {
+            background-color: white;
+            border: 1px solid #e2e8f0; /* slate-200 */
+            border-radius: 9999px; /* full rounded */
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 500;
+            color: #475569; /* slate-600 */
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .filter-btn:hover {
+            background-color: #f1f5f9; /* slate-100 */
+            border-color: #cbd5e1; /* slate-300 */
+        }
+        .filter-btn.active {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            border-color: #3b82f6;
+        }
+        .filter-btn i {
+            margin-right: 0.25rem;
+        }
+    </style>
+    <!-- Note: A valid Google Maps API key is required for the map to render. Replace 'YOUR_API_KEY' -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"></script>
+</head>
+<body class="text-slate-800">
+
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-center">
+            <!-- Using the user-provided logo image name -->
+            <img src="맛동여지도 로고.png" alt="맛동여지도 로고" class="h-16" onerror="this.onerror=null; this.src='https://placehold.co/200x80/ffffff/1e293b?text=맛동여지도'; this.classList.add('rounded');">
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        
+        <section>
+            <div class="flex justify-between items-end mb-4">
+                <h2 class="text-2xl font-bold text-slate-800">제주도 맛집 지도</h2>
+            </div>
+            
+            <div class="category-filter" id="category-filter-container">
+                <!-- Filter buttons will be populated by JavaScript -->
+            </div>
+
+            <div id="map"></div>
+        </section>
+
+        <section id="restaurant-list">
+            <!-- Content will be populated by JavaScript -->
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-800 text-white py-6 text-center mt-12">
+        <p class="text-sm text-slate-400">&copy; 2026 맛동여지도. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Data populated from Google Maps search results
+        const restaurants = {
+            western: [
+                { name: "양식당", address: "제주시 성화로5길 5", rating: "4.8", status: "영업 중", lat: 33.4934, lng: 126.4952 }, // Approximated coords for Jeju
+                { name: "컬쳐드", address: "제주시 아라동 승천로 81", rating: "4.7", status: "영업 중", lat: 33.4750, lng: 126.5450 },
+                { name: "연동 키친글라", address: "제주시 연동12길 25-1", rating: "4.9", status: "영업 중", lat: 33.4850, lng: 126.4900 },
+                { name: "파페로", address: "제주시 원노형6길 14", rating: "4.7", status: "영업 종료", lat: 33.4800, lng: 126.4800 },
+                { name: "이누팬", address: "제주시 신설로 40-11 1 층", rating: "4.9", status: "영업 종료 (곧 영업 시작)", lat: 33.4900, lng: 126.5400 }
+            ],
+            chinese: [
+                { name: "왕가 중화요리", address: "제주시 고마로19길 2", rating: "5.0", status: "영업 중", lat: 33.5050, lng: 126.5350 },
+                { name: "제주홍랑짬뽕", address: "제주시 동광로 9 1층", rating: "4.9", status: "영업 중", lat: 33.5100, lng: 126.5250 },
+                { name: "보배반점 제주도청점", address: "제주시 연동 310-13", rating: "4.7", status: "영업 중", lat: 33.4880, lng: 126.4980 },
+                { name: "소리원", address: "제주시 연동12길 37", rating: "4.2", status: "영업 중", lat: 33.4855, lng: 126.4910 },
+                { name: "영 중화요리", address: "제주시 서광로 205", rating: "4.6", status: "영업 중", lat: 33.4990, lng: 126.5150 }
+            ],
+            korean: [
+                { name: "연미관", address: "제주시 신대로9길 21-1", rating: "4.9", status: "영업 중", lat: 33.4860, lng: 126.4950 },
+                { name: "서귀포모녀식당", address: "제주시 선덕로3길 20", rating: "4.6", status: "영업 중", lat: 33.4900, lng: 126.4950 },
+                { name: "장모식탁", address: "제주시 연신로 51", rating: "4.5", status: "영업 중", lat: 33.4800, lng: 126.5400 },
+                { name: "상춘재", address: "제주시 중앙로 598", rating: "4.4", status: "영업 중", lat: 33.4600, lng: 126.5400 }
+            ],
+            cafe: [
+                { name: "글러트니커피", address: "제주시 구남로2길 38", rating: "4.9", status: "영업 중", lat: 33.4950, lng: 126.5350 },
+                { name: "플랜트827", address: "제주시 월평4길 54-27", rating: "4.7", status: "영업 중", lat: 33.4700, lng: 126.5600 },
+                { name: "코리코카페 제주점", address: "제주시 구좌읍 비자림로 1199", rating: "4.9", status: "영업 중", lat: 33.4300, lng: 126.7500 },
+                { name: "커피템플", address: "제주시 영평길 269", rating: "4.5", status: "영업 중", lat: 33.4500, lng: 126.5800 },
+                { name: "고도500", address: "제주시", rating: "4.5", status: "영업 중", lat: 33.4500, lng: 126.5500 }
+            ]
+        };
+
+        const categories = [
+            { id: 'western', title: '양식', icon: 'fa-utensils' },
+            { id: 'chinese', title: '중식', icon: 'fa-bowl-rice' },
+            { id: 'korean', title: '한식', icon: 'fa-bowl-food' },
+            { id: 'cafe', title: '카페', icon: 'fa-mug-hot' }
+        ];
+
+        let map;
+        let markers = [];
+        let infoWindow;
+        let currentFilter = 'all'; // Default to show all
+
+        function initMap() {
+            // Center the map on Jeju Island
+            const jejuCenter = { lat: 33.4500, lng: 126.5300 }; // Rough center of Jeju-si
+            
+            renderFilters();
+
+            // Note: Ensure you have a valid Google Maps API Key in the script tag
+            try {
+                map = new google.maps.Map(document.getElementById("map"), {
+                    zoom: 11,
+                    center: jejuCenter,
+                    mapTypeControl: false,
+                    streetViewControl: false,
+                });
+                infoWindow = new google.maps.InfoWindow();
+
+                updateView();
+            } catch (error) {
+                console.error("Error loading Google Maps. Ensure API key is set.", error);
+                document.getElementById('map').innerHTML = `
+                    <div class="flex items-center justify-center h-full bg-slate-100 text-slate-500 text-center p-4 rounded-lg">
+                        <p><i class="fas fa-map-marked-alt text-3xl mb-2"></i><br>지도를 불러올 수 없습니다.<br>Google Maps API 키를 확인해주세요.</p>
+                    </div>
+                `;
+                updateView(); // Render list even if map fails
+            }
+        }
+
+        function renderFilters() {
+            const container = document.getElementById('category-filter-container');
+            container.innerHTML = '';
+
+            // 'All' button
+            const allBtn = document.createElement('button');
+            allBtn.className = `filter-btn ${currentFilter === 'all' ? 'active' : ''}`;
+            allBtn.innerHTML = `<i class="fas fa-globe"></i> 전체`;
+            allBtn.onclick = () => setFilter('all');
+            container.appendChild(allBtn);
+
+            // Category buttons
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `filter-btn ${currentFilter === cat.id ? 'active' : ''}`;
+                btn.innerHTML = `<i class="fas ${cat.icon}"></i> ${cat.title}`;
+                btn.onclick = () => setFilter(cat.id);
+                container.appendChild(btn);
+            });
+        }
+
+        function setFilter(categoryId) {
+            currentFilter = categoryId;
+            renderFilters(); // Update button styles
+            updateView();    // Update map markers and list
+        }
+
+        function updateView() {
+            clearMarkers();
+            renderList();
+            addMarkers();
+        }
+
+        function clearMarkers() {
+            for (let i = 0; i < markers.length; i++) {
+                markers[i].setMap(null);
+            }
+            markers = [];
+        }
+
+        function addMarkers() {
+            if(!map) return;
+            
+            const categoriesToRender = currentFilter === 'all' ? categories : categories.filter(c => c.id === currentFilter);
+
+            categoriesToRender.forEach(category => {
+                const list = restaurants[category.id];
+                let iconColor = 'blue';
+                if(category.id === 'chinese') iconColor = 'red';
+                if(category.id === 'korean') iconColor = 'green';
+                if(category.id === 'cafe') iconColor = 'yellow';
+
+                list.forEach(place => {
+                    if (place.lat && place.lng) {
+                        const marker = new google.maps.Marker({
+                            position: { lat: place.lat, lng: place.lng },
+                            map: map,
+                            title: place.name,
+                            // Simplistic icon coloring for visualization
+                            icon: `http://maps.google.com/mapfiles/ms/icons/${iconColor}-dot.png`
+                        });
+
+                        marker.addListener('click', () => {
+                            const contentString = `
+                                <div class="p-2">
+                                    <h3 class="font-bold text-lg">${place.name}</h3>
+                                    <p class="text-sm text-gray-600">${place.address}</p>
+                                    <p class="text-sm font-semibold text-amber-500"><i class="fas fa-star"></i> ${place.rating}</p>
+                                </div>
+                            `;
+                            infoWindow.setContent(contentString);
+                            infoWindow.open(map, marker);
+                            map.panTo(marker.getPosition());
+                            map.setZoom(14);
+                        });
+
+                        markers.push(marker);
+                    }
+                });
+            });
+        }
+
+        function renderList() {
+            const listContainer = document.getElementById('restaurant-list');
+            listContainer.innerHTML = '';
+
+            const categoriesToRender = currentFilter === 'all' ? categories : categories.filter(c => c.id === currentFilter);
+
+            if (categoriesToRender.length === 0) {
+                 listContainer.innerHTML = '<p class="text-center text-gray-500 my-8">해당 카테고리의 맛집이 없습니다.</p>';
+                 return;
+            }
+
+            categoriesToRender.forEach(category => {
+                const categoryData = restaurants[category.id];
+                
+                // Create Header
+                const header = document.createElement('h3');
+                header.className = 'category-header';
+                header.innerHTML = `<i class="fas ${category.icon}"></i> ${category.title} 맛집`;
+                listContainer.appendChild(header);
+
+                // Create List Items Container
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+
+                categoryData.forEach(place => {
+                    const item = document.createElement('div');
+                    item.className = 'restaurant-item flex flex-col justify-between';
+                    
+                    let statusColor = place.status.includes('영업 중') ? 'text-emerald-600' : 'text-rose-500';
+
+                    item.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="restaurant-name">${place.name}</h4>
+                                <span class="restaurant-rating"><i class="fas fa-star text-sm"></i> ${place.rating}</span>
+                            </div>
+                            <p class="restaurant-info"><i class="fas fa-map-marker-alt w-4 text-center"></i> ${place.address}</p>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
+                            <span class="text-xs font-medium ${statusColor}">${place.status}</span>
+                            <button class="text-sm text-blue-500 hover:text-blue-700 font-medium transition-colors" onclick="focusOnMap(${place.lat}, ${place.lng}, '${place.name}')">
+                                지도에서 보기
+                            </button>
+                        </div>
+                    `;
+                    grid.appendChild(item);
+                });
+
+                listContainer.appendChild(grid);
+            });
+        }
+
+        function focusOnMap(lat, lng, name) {
+            if(!map) {
+                alert("지도를 불러올 수 없습니다. API 키를 확인해주세요.");
+                return;
+            }
+            
+            const position = { lat: lat, lng: lng };
+            map.panTo(position);
+            map.setZoom(15);
+            
+            // Smoothly scroll to top where map is
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Find and open the corresponding marker's infowindow
+            const targetMarker = markers.find(m => m.title === name);
+            if (targetMarker) {
+                 const place = findPlaceData(name);
+                 if(place){
+                     const contentString = `
+                        <div class="p-2">
+                            <h3 class="font-bold text-lg">${place.name}</h3>
+                            <p class="text-sm text-gray-600">${place.address}</p>
+                            <p class="text-sm font-semibold text-amber-500"><i class="fas fa-star"></i> ${place.rating}</p>
+                        </div>
+                    `;
+                    infoWindow.setContent(contentString);
+                    infoWindow.open(map, targetMarker);
+                 }
+            }
+        }
+
+        function findPlaceData(name) {
+            for(const cat in restaurants) {
+                const found = restaurants[cat].find(p => p.name === name);
+                if(found) return found;
+            }
+            return null;
+        }
+
+    </script>
+</body>
+</html>
